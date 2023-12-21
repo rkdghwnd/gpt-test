@@ -4,12 +4,11 @@ const router = express.Router();
 const dotenv = require('dotenv');
 dotenv.config();
 
-// kakaolocals
-router.get('/', async (req, res, next) => {
-  // GET /books
+// replit.js
+router.get('/create', async (req, res, next) => {
+  // GET /replit
   try {
-    //
-    res.status(201).json(response.data);
+    res.status(201).json();
   } catch (error) {
     console.error(error);
     next(error);

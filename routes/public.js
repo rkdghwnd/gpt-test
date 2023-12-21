@@ -7,14 +7,14 @@ dotenv.config();
 const OpenAI = require('openai');
 
 const openai = new OpenAI({
-  apiKey: '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',
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-const assistant_id = 'asst_QVzBqCM2w8yJTSQ945cmYcOr';
+const assistant_id = 'asst_Xeh1cc9k9oUbUqBy9vjAk5R2';
 
-async function kakaoRestaurant() {
+async function kakaoRestaurant(x, y) {
   const response = await axios.get(
-    `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${'FD6'}&x=${'126.8990936'}&y=${'37.4820691'}&radius=${'10000'}`,
+    `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${x}&y=${y}&radius=10000`,
     {
       headers: {
         Authorization: 'KakaoAK d5c945403f5d79d390bd3dda96d1e74e',
@@ -31,35 +31,35 @@ router.get('/', async (req, res, next) => {
       model: 'gpt-4-1106-preview',
       name: '오늘뭐먹지?',
       instructions:
-        'you serve infomation about restaurant infomation from kakao api.',
+        'you serve response about restaurant infomation from kakao kakaoRestaurant api.',
       tools: [
         { type: 'retrieval' },
         {
           type: 'function',
           function: {
             name: 'kakaoRestaurant',
-            description: 'kakao api',
+            description: 'kakao restaurant api',
             parameters: {
               type: 'object',
               properties: {
                 category_group_code: {
                   type: 'string',
-                  description: 'category code!',
+                  description: 'category code',
                 },
                 x: {
                   type: 'string',
-                  description: '경도',
+                  description: 'longitude',
                 },
-                x: {
+                y: {
                   type: 'string',
-                  description: '위도',
+                  description: 'latitude',
                 },
                 radius: {
                   type: 'string',
                   description: '반경',
                 },
               },
-              required: ['category_group_code', 'x', 'y', 'radius'],
+              required: ['x', 'y'],
             },
           },
         },
@@ -75,73 +75,81 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.get('/thread', async (req, res, next) => {
-  // GET /public
+router.get('/start', async (req, res, next) => {
+  // GET /public/start
   try {
+    console.log('Starting a new conversation...');
     const thread = await openai.beta.threads.create();
-    const message = await openai.beta.threads.messages.create(thread.id, {
-      role: 'user',
-      content:
-        'call functions kakaoRestaurant, category code is FD6, x is 126.8990496,y is 37.4820557, radius is 10000',
-    });
-    const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: assistant_id,
-      instructions:
-        'you introduce restaurant using kakaoRestaurant functions from based on location,categorycode,radius',
-    });
 
-    while (true) {
-      if (run.status === 'completed') {
-        break;
-      }
+    console.log(`New thread created with ID: ${thread.id}`);
 
-      const retrieve = await openai.beta.threads.runs.retrieve(
-        thread.id,
-        run.id
-      );
-
-      console.log(`run status: ${run.status}`);
-
-      if (retrieve.status === 'requires_action') {
-        console.log('Requires action');
-        const required_actions =
-          await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, {
-            tool_outputs: [
-              {
-                tool_call_id: run.requiredAction,
-                output: '',
-              },
-            ],
-          });
-      }
-    }
-    const list = await openai.beta.threads.messages.list(thread.id);
-
-    res.status(201).json(list);
+    return res.status(201).json({ threadId: thread.id });
   } catch (error) {
     console.error(error);
     next(error);
   }
 });
 
-router.get('/submitoutput', async (req, res, next) => {
-  // GET /public
+router.get('/chat', async (req, res, next) => {
+  // GET /public/start
   try {
-    const threadId = 'thread_A0n1dOOn3zFsgYgiSGVyrfuK';
-    const runId = 'run_UYpff8rPc4TaljwdujwjxKLm';
-    const run = await openai.beta.threads.runs.submitToolOutputs(
-      threadId,
-      runId,
-      {
-        tool_outputs: [
-          {
-            tool_call_id: 'call_OtQPOG8B3lcOe1LchUY9h5d5',
-            output: 'infomation',
-          },
-        ],
+    const threadId = req.query.thread_id;
+    const userInput = req.query.message;
+
+    if (!threadId) {
+      console.log('Error: Missing threadId');
+      return res.status(400).json({ error: 'Missing threadId' });
+    }
+
+    console.log(`Received message: ${userInput} for thread ID: ${threadId}`);
+
+    // Add the user's message to the thread
+    const message = await openai.beta.threads.messages.create(threadId, {
+      role: 'user',
+      content: userInput,
+    });
+
+    // Run the Assistant
+    const run = await openai.beta.threads.runs.create(threadId, {
+      assistant_id: assistant_id,
+      instructions: 'you recommend restaurant nearby specific location',
+    });
+
+    while (true) {
+      const runStatus = await openai.beta.threads.runs.retrieve(
+        threadId,
+        run.id
+      );
+
+      if (runStatus.status === 'completed') {
+        break;
+      } else if (runStatus.status === 'requires_action') {
+        // Handle the function call
+        for (let toolCall of runStatus.required_action.submit_tool_outputs
+          .tool_calls) {
+          if (toolCall.function_name === 'kakaoRestaurant') {
+            // Process solar panel calculations
+            const arguments = JSON.parse(toolCall.function_arguments);
+            const output = functions.kakaoRestaurant(
+              arguments['x'],
+              arguments['y']
+            );
+
+            await openai.beta.threads.runs.submitToolOutputs(threadId, run.id, {
+              toolOutputs: [
+                {
+                  tool_call_id: toolCall.id,
+                  output: JSON.stringify(output),
+                },
+              ],
+            });
+          }
+        }
       }
-    );
-    res.status(201).json(messages);
+    }
+    const messages = await openai.beta.threads.messages.list(threadId);
+    const response = messages.data[0].content[0].text.value;
+    res.status(201).json(response);
   } catch (error) {
     console.error(error);
     next(error);
