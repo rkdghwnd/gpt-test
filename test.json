@@ -1,0 +1,59 @@
+{
+  "options": {
+    "method": "get",
+    "path": "/threads/thread_xyap143bLsNOL0co5E3ENILS/messages",
+    "query": {},
+    "headers": { "OpenAI-Beta": "assistants=v1" }
+  },
+  "response": { "size": 0, "timeout": 0 },
+  "body": {
+    "object": "list",
+    "data": [
+      {
+        "id": "msg_EjzlRRaPv26kvCDbzGLrDZSs",
+        "object": "thread.message",
+        "created_at": 1703137822,
+        "thread_id": "thread_xyap143bLsNOL0co5E3ENILS",
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": {
+              "value": "call functions kakaoRestaurant, category code is FD6, x is 126.8990496,y is 37.4820557, radius is 10000",
+              "annotations": []
+            }
+          }
+        ],
+        "file_ids": [],
+        "assistant_id": null,
+        "run_id": null,
+        "metadata": {}
+      }
+    ],
+    "first_id": "msg_EjzlRRaPv26kvCDbzGLrDZSs",
+    "last_id": "msg_EjzlRRaPv26kvCDbzGLrDZSs",
+    "has_more": false
+  },
+  "data": [
+    {
+      "id": "msg_EjzlRRaPv26kvCDbzGLrDZSs",
+      "object": "thread.message",
+      "created_at": 1703137822,
+      "thread_id": "thread_xyap143bLsNOL0co5E3ENILS",
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": {
+            "value": "call functions kakaoRestaurant, category code is FD6, x is 126.8990496,y is 37.4820557, radius is 10000",
+            "annotations": []
+          }
+        }
+      ],
+      "file_ids": [],
+      "assistant_id": null,
+      "run_id": null,
+      "metadata": {}
+    }
+  ]
+}
