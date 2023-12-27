@@ -3,7 +3,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 dotenv.config();
 const publicRouter = require('./routes/public');
-const replitRouter = require('./routes/replit');
+const chatcompletionRouter = require('./routes/chatcompletion');
 
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -35,7 +35,7 @@ app.use('/', express.static(path.join(__dirname, 'uploads')));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
 app.use('/public', publicRouter);
-app.use('/replit', replitRouter);
+app.use('/chatcompletion', chatcompletionRouter);
 
 const { swaggerUi, specs } = require('./swagger');
 

@@ -10,18 +10,24 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const assistant_id = 'asst_Xeh1cc9k9oUbUqBy9vjAk5R2';
+const assistant_id = 'asst_EHSYp2dBPJ9ntScKVdPjc02D';
 
-async function kakaoRestaurant(x, y) {
-  const response = await axios.get(
-    `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${x}&y=${y}&radius=10000`,
-    {
-      headers: {
-        Authorization: 'KakaoAK d5c945403f5d79d390bd3dda96d1e74e',
-      },
-    }
-  );
-  return response.data;
+async function calculate(x, y) {
+  try {
+    const response = await axios.get(
+      `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=FD6&x=${x}&y=${y}&radius=10000`,
+      {
+        headers: {
+          Authorization: 'KakaoAK d5c945403f5d79d390bd3dda96d1e74e',
+        },
+      }
+    );
+
+    // return response.data;
+    return x + y;
+  } catch (error) {
+    return error.data;
+  }
 }
 
 router.get('/', async (req, res, next) => {
@@ -29,35 +35,34 @@ router.get('/', async (req, res, next) => {
   try {
     const assistant = await openai.beta.assistants.create({
       model: 'gpt-4-1106-preview',
-      name: '오늘뭐먹지?',
-      instructions:
-        'you serve response about restaurant infomation from kakao kakaoRestaurant api.',
+      name: '계산기',
+      instructions: 'you caculate x + y',
       tools: [
         { type: 'retrieval' },
         {
           type: 'function',
           function: {
-            name: 'kakaoRestaurant',
-            description: 'kakao restaurant api',
+            name: 'calculate',
+            description: 'calculate x+y',
             parameters: {
               type: 'object',
               properties: {
-                category_group_code: {
-                  type: 'string',
-                  description: 'category code',
-                },
+                // category_group_code: {
+                //   type: 'string',
+                //   description: 'category code',
+                // },
                 x: {
-                  type: 'string',
+                  type: 'integer',
                   description: 'longitude',
                 },
                 y: {
-                  type: 'string',
+                  type: 'integer',
                   description: 'latitude',
                 },
-                radius: {
-                  type: 'string',
-                  description: '반경',
-                },
+                // radius: {
+                //   type: 'string',
+                //   description: '반경',
+                // },
               },
               required: ['x', 'y'],
             },
@@ -127,13 +132,11 @@ router.get('/chat', async (req, res, next) => {
         // Handle the function call
         for (let toolCall of runStatus.required_action.submit_tool_outputs
           .tool_calls) {
-          if (toolCall.function_name === 'kakaoRestaurant') {
+          if (toolCall.function_name === 'calculate') {
             // Process solar panel calculations
             const arguments = JSON.parse(toolCall.function_arguments);
-            const output = functions.kakaoRestaurant(
-              arguments['x'],
-              arguments['y']
-            );
+
+            const output = functions.calculate(arguments['x'], arguments['y']);
 
             await openai.beta.threads.runs.submitToolOutputs(threadId, run.id, {
               toolOutputs: [
