@@ -4,7 +4,7 @@ const router = express.Router();
 const dotenv = require('dotenv');
 dotenv.config();
 const OpenAI = require('openai');
-const openai = new OpenAI({ apikey: process.env.OPENAI_API_KEYY });
+const openai = new OpenAI({ apikey: process.env.OPENAI_API_KEY });
 
 const weatherFunctionSpec = {
   name: 'weather',
@@ -42,7 +42,7 @@ router.get('/create', async (req, res, next) => {
       {
         role: 'system',
         content: 'you give very short answers on calling function',
-        // content: 'chat with me not using function',
+        // content: 'chat with me not using function, hi',
       },
       { role: 'user', content: "What's the wind in paris?" },
     ];
@@ -53,6 +53,7 @@ router.get('/create', async (req, res, next) => {
       model: 'gpt-3.5-turbo',
       messages: messages,
       functions: [weatherFunctionSpec],
+      function_call: 'auto',
     });
 
     let responseMessage = response.choices[0].message;
@@ -65,14 +66,7 @@ router.get('/create', async (req, res, next) => {
       const weather = await getWeather(city);
       console.log('result', weather);
 
-      // // call GPT and give it the weather data
-      // messages.push({
-      //   role: 'function',
-      //   name: 'getWeather',
-      //   content: JSON.stringify(weather),
-      // });
-
-      return res.status(201).json(weather);
+      // return res.status(201).json(weather);
     }
     return res.status(201).json(responseMessage);
   } catch (error) {

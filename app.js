@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 const publicRouter = require('./routes/public');
 const chatcompletionRouter = require('./routes/chatcompletion');
+const prettierRouter = require('./routes/prettier');
 
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -36,6 +37,7 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 
 app.use('/public', publicRouter);
 app.use('/chatcompletion', chatcompletionRouter);
+app.use('/prettier', prettierRouter);
 
 const { swaggerUi, specs } = require('./swagger');
 
