@@ -31,36 +31,37 @@ async function run_conversation() {
   };
   // 12. Data to send to the API.
   let data = {
+    model: 'gpt-3.5-turbo-0613',
     messages: [
       {
         role: 'user',
-        content: '구로의 음식점을 찾아줘',
-        // content: 'please find some computer product',
-        // "What's the weather like in Boston in fahrenheit and based on the temperature what should I wear?",
+        content: '역삼역 근처의 음식점을 찾아줘',
       },
     ],
-    model: 'gpt-3.5-turbo-0613',
-    functions: [
+    tools: [
       {
-        name: 'kakao_restaurant',
-        description: 'Get the restaurant list based on location',
-        parameters: {
-          type: 'object',
-          properties: {
-            latitude: {
-              type: 'string',
-              description: 'latitude',
+        type: 'function',
+        function: {
+          name: 'kakao_restaurant',
+          description: 'Get the restaurant list based on location',
+          parameters: {
+            type: 'object',
+            properties: {
+              latitude: {
+                type: 'string',
+                description: 'latitude',
+              },
+              longitude: {
+                type: 'string',
+                description: 'longitude',
+              },
             },
-            longitude: {
-              type: 'string',
-              description: 'longitude',
-            },
+            required: ['latitude', 'longitude'],
           },
-          required: ['latitude', 'longitude'],
         },
       },
     ],
-    function_call: 'auto',
+    tool_choice: 'auto',
   };
   // 13. Try block to handle potential errors.
   try {
@@ -68,15 +69,17 @@ async function run_conversation() {
     console.log(`Sending initial request to OpenAI API...`);
     let response = await axios.post(baseURL, data, { headers });
     response = response.data;
+    console.log(response);
     // 15. Track Executed Functions to Prevent Unnecessary Invocations
     let executedFunctions = {};
     // 16. Loop to process the conversation until it finishes.
     while (
-      response.choices[0].message.function_call &&
+      response.choices[0].message.tool_calls &&
       response.choices[0].finish_reason !== 'stop'
     ) {
       let message = response.choices[0].message;
-      const function_name = message.function_call.name;
+      const function_name = message.tool_calls[0].function.name;
+
       // 17. Breaks the loop if function has already been executed.
       if (executedFunctions[function_name]) {
         break;
@@ -85,7 +88,9 @@ async function run_conversation() {
       let function_response = '';
       switch (function_name) {
         case 'kakao_restaurant':
-          let recommendationArgs = JSON.parse(message.function_call.arguments);
+          let recommendationArgs = JSON.parse(
+            message.tool_calls[0].function.arguments
+          );
           function_response = await kakao_restaurant(
             recommendationArgs.latitude,
             recommendationArgs.longitude
